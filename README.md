@@ -6,7 +6,9 @@ No build step, no dependencies, no account. It's one `index.html`.
 
 ## Features
 
-- **Log each practice test**: date, PrepTest, scaled score (120–180), blind review score, Logical Reasoning and Reading Comprehension correct/total, and notes
+- **Log each practice test**: date, PrepTest, scaled score (120–180), blind review score, and general notes
+- **Section notes**: separate Logical Reasoning and Reading Comprehension sections, each with correct/total, tags for the question types that tripped you up, and a full notes field. Click **Notes** on a test to expand them
+- **Trouble spots**: the LR and RC question types you've tagged most often across all your tests
 - **Recent average and likely range**: the mean of your last *N* tests, ± one standard deviation
 - **Consistency**: standard deviation for recent tests and for all tests
 - **Trend**: the slope of a fitted line, in points per test
@@ -37,6 +39,5 @@ Use **Data → Export backup (JSON)** now and then, and **Import backup** to res
 
 ## Ideas for later
 
-- Track missed questions by type (flaw, necessary assumption, etc.)
 - Section timing
 - Sync across devices with a small backend

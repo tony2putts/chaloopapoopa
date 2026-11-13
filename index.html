@@ -148,14 +148,48 @@ th { font-size: 12px; font-weight: 500; color: var(--muted); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td.notes { white-space: normal; min-width: 160px; color: var(--ink2); font-size: 13px; }
 tr:last-child td { border-bottom: 0; }
+tr.has-detail td { border-bottom: 0; }
+tr.detail td { white-space: normal; padding: 4px 6px 16px; }
+.detail-grid { position: sticky; left: 6px; width: var(--wrap-w, 100%); display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.detail-box { background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+.detail-box h3 { font-size: 12px; font-weight: 600; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; color: var(--ink); }
+.detail-box p { margin: 0; white-space: pre-wrap; color: var(--ink2); overflow-wrap: anywhere; }
+.detail-box .none { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--ink2); background: var(--surface); }
+.note-flags { display: inline-flex; gap: 4px; }
+
+.trouble { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 8px; }
+@media (max-width: 760px) { .trouble { grid-template-columns: 1fr; } }
+.trouble h3 { font-size: 13px; font-weight: 600; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+.t-row { display: grid; grid-template-columns: minmax(110px, 40%) 1fr auto; align-items: center; gap: 10px; font-size: 13px; padding: 4px 0; }
+.t-row .name { color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t-row .track { height: 10px; position: relative; }
+.t-row .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 4px 4px 0; min-width: 3px; }
+.t-row .count { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; min-width: 64px; text-align: right; }
+.t-row .count span { color: var(--muted); font-weight: 400; }
 
 .empty { text-align: center; padding: 56px 20px; }
 .empty p { color: var(--ink2); max-width: 440px; margin: 8px auto 20px; }
 
 dialog {
   border: 1px solid var(--border); border-radius: 14px; padding: 0; width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px); overflow: auto;
   background: var(--surface); color: var(--ink);
 }
+#dlg-test { width: min(680px, calc(100vw - 32px)); }
+fieldset.sect { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 14px; margin: 0; display: grid; gap: 12px; min-width: 0; }
+fieldset.sect legend { font-size: 14px; font-weight: 600; padding: 0 6px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.f-label { font-size: 13px; color: var(--ink2); display: grid; gap: 6px; }
+.f-label small { color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--page); color: var(--ink2); cursor: pointer;
+}
+.chip:hover { background: var(--wash); }
+.chip[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); border-color: transparent; }
+.sect-row { display: grid; grid-template-columns: minmax(0, 220px); }
 dialog::backdrop { background: rgba(0,0,0,.35); }
 dialog form { padding: 20px; }
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
@@ -258,6 +292,16 @@ textarea { resize: vertical; min-height: 60px; }
     <section class="card">
       <div class="chart-head">
         <div>
+          <h2>Trouble spots</h2>
+          <p class="sub" id="trouble-sub">Question types you tagged most often</p>
+        </div>
+      </div>
+      <div id="trouble"></div>
+    </section>
+
+    <section class="card">
+      <div class="chart-head">
+        <div>
           <h2>All tests</h2>
           <p class="sub" id="table-sub"></p>
         </div>
@@ -285,13 +329,35 @@ textarea { resize: vertical; min-height: 60px; }
       <label class="f">Test<input type="text" name="name" placeholder="PrepTest 141" maxlength="60"></label>
       <label class="f">Scaled score<input type="number" name="score" min="120" max="180" step="1" required inputmode="numeric"></label>
       <label class="f">Blind review score <small>optional</small><input type="number" name="br" min="120" max="180" step="1" inputmode="numeric"></label>
-      <label class="f">Logical Reasoning <small>correct / total, both LR sections</small>
-        <span class="pair"><input type="number" name="lrC" min="0" step="1" aria-label="LR correct"><span>/</span><input type="number" name="lrT" min="1" step="1" aria-label="LR total"></span>
-      </label>
-      <label class="f">Reading Comprehension <small>correct / total</small>
-        <span class="pair"><input type="number" name="rcC" min="0" step="1" aria-label="RC correct"><span>/</span><input type="number" name="rcT" min="1" step="1" aria-label="RC total"></span>
-      </label>
-      <label class="f full">Notes<textarea name="notes" maxlength="500" placeholder="Timing, question types that hurt, conditions…"></textarea></label>
+      <fieldset class="sect full">
+        <legend><i class="key-dot" style="background:var(--s1)"></i>Logical Reasoning</legend>
+        <div class="sect-row">
+          <label class="f">Correct / total <small>both LR sections combined</small>
+            <span class="pair"><input type="number" name="lrC" min="0" step="1" aria-label="LR correct"><span>/</span><input type="number" name="lrT" min="1" step="1" aria-label="LR total"></span>
+          </label>
+        </div>
+        <div class="f-label" id="lr-tags-label">Question types that tripped you up <small>tap to tag, optional</small>
+          <div class="chips" data-sect="lr" role="group" aria-labelledby="lr-tags-label"></div>
+        </div>
+        <label class="f">LR notes
+          <textarea name="lrNotes" rows="5" maxlength="5000" placeholder="Which questions you missed and why, traps you fell for, what to review…&#10;e.g. Q14 (S1) flaw: missed the sufficient vs. necessary switch"></textarea>
+        </label>
+      </fieldset>
+      <fieldset class="sect full">
+        <legend><i class="key-dot" style="background:var(--s2)"></i>Reading Comprehension</legend>
+        <div class="sect-row">
+          <label class="f">Correct / total
+            <span class="pair"><input type="number" name="rcC" min="0" step="1" aria-label="RC correct"><span>/</span><input type="number" name="rcT" min="1" step="1" aria-label="RC total"></span>
+          </label>
+        </div>
+        <div class="f-label" id="rc-tags-label">Question types that tripped you up <small>tap to tag, optional</small>
+          <div class="chips" data-sect="rc" role="group" aria-labelledby="rc-tags-label"></div>
+        </div>
+        <label class="f">RC notes
+          <textarea name="rcNotes" rows="5" maxlength="5000" placeholder="Passage by passage: topic, how long it took, which questions you missed and why…&#10;e.g. P3 (science), 10 min, misread the author's attitude"></textarea>
+        </label>
+      </fieldset>
+      <label class="f full">General notes <small>timing, sleep, conditions, mindset</small><textarea name="notes" rows="3" maxlength="2000" placeholder="Anything that isn't about one section"></textarea></label>
     </div>
     <div class="err" id="form-err"></div>
     <div class="dlg-actions">
@@ -327,6 +393,10 @@ textarea { resize: vertical; min-height: 60px; }
   const DEFAULTS = { goal: 170, window: 5, testDate: '' };
   const $ = (s) => document.querySelector(s);
   const SVGNS = 'http://www.w3.org/2000/svg';
+  const LR_TYPES = ['Flaw', 'Necessary Assumption', 'Sufficient Assumption', 'Strengthen', 'Weaken', 'Must Be True', 'Most Strongly Supported', 'Must Be False', 'Main Conclusion', 'Role', 'Method of Reasoning', 'Parallel Reasoning', 'Parallel Flaw', 'Principle', 'Paradox', 'Evaluate', 'Point at Issue', 'Conditional logic'];
+  const RC_TYPES = ['Main Point', 'Primary Purpose', 'Detail', 'Inference', "Author's Attitude", 'Function', 'Structure', 'Analogy', 'Strengthen / Weaken', 'Principle', 'Comparative passage', 'Timing'];
+  const openDetails = new Set();
+  const cleanTags = (a) => Array.isArray(a) ? [...new Set(a.filter((x) => typeof x === 'string' && x.length <= 60))] : [];
 
   // ---------- storage ----------
   function load() {
@@ -334,13 +404,17 @@ textarea { resize: vertical; min-height: 60px; }
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const d = JSON.parse(raw);
-        return { tests: Array.isArray(d.tests) ? d.tests.filter(validTest) : [], settings: { ...DEFAULTS, ...(d.settings || {}) } };
+        return { tests: Array.isArray(d.tests) ? d.tests.filter(validTest).map(normalize) : [], settings: { ...DEFAULTS, ...(d.settings || {}) } };
       }
     } catch (e) { /* storage unavailable */ }
     return { tests: [], settings: { ...DEFAULTS } };
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+  }
+  function normalize(t) {
+    const str = (v) => typeof v === 'string' ? v : '';
+    return { ...t, notes: str(t.notes), lrNotes: str(t.lrNotes), rcNotes: str(t.rcNotes), lrTags: cleanTags(t.lrTags), rcTags: cleanTags(t.rcTags) };
   }
   function validTest(t) {
     return t && typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(t.score) && t.score >= 120 && t.score <= 180;
@@ -784,9 +858,29 @@ textarea { resize: vertical; min-height: 60px; }
         h('td', { class: 'num' }, Number.isFinite(t.br) ? String(t.br) : '–'),
         h('td', { class: 'num' }, sec(t.lrC, t.lrT)),
         h('td', { class: 'num' }, sec(t.rcC, t.rcT)),
-        h('td', { class: 'notes' }, t.notes || ''),
       );
+      const hasLR = !!(t.lrNotes || (t.lrTags && t.lrTags.length));
+      const hasRC = !!(t.rcNotes || (t.rcTags && t.rcTags.length));
+      const hasAny = hasLR || hasRC || !!t.notes;
+      const notesTd = h('td', { class: 'notes' });
+      if (hasAny) {
+        const preview = (t.lrNotes || t.rcNotes || t.notes || '').split('\n')[0];
+        const flags = h('span', { class: 'note-flags' });
+        if (hasLR) flags.append(h('span', { class: 'tag' }, 'LR'));
+        if (hasRC) flags.append(h('span', { class: 'tag' }, 'RC'));
+        notesTd.append(flags, ' ', preview.length > 60 ? preview.slice(0, 60) + '…' : preview);
+      }
+      tr.append(notesTd);
       const act = h('td');
+      if (hasAny) {
+        const open = openDetails.has(t.id);
+        const xb = h('button', { class: 'link', type: 'button', 'aria-expanded': String(open) }, open ? 'Hide notes' : 'Notes');
+        xb.addEventListener('click', () => {
+          if (openDetails.has(t.id)) openDetails.delete(t.id); else openDetails.add(t.id);
+          render();
+        });
+        act.append(xb);
+      }
       const eb = h('button', { class: 'link', type: 'button' }, 'Edit');
       eb.addEventListener('click', () => openTest(t));
       const db = h('button', { class: 'link', type: 'button' }, 'Delete');
@@ -799,12 +893,101 @@ textarea { resize: vertical; min-height: 60px; }
       act.append(eb, db);
       tr.append(act);
       tb.append(tr);
+      if (hasAny && openDetails.has(t.id)) {
+        tr.classList.add('has-detail');
+        const dtr = h('tr', { class: 'detail' });
+        const td = h('td', { colspan: '8' });
+        const grid = h('div', { class: 'detail-grid' });
+        const box = (title, color, tags, text) => {
+          const b = h('div', { class: 'detail-box' });
+          const h3 = h('h3');
+          if (color) h3.append(h('i', { class: 'key-dot', style: `background:var(${color})` }));
+          h3.append(title);
+          b.append(h3);
+          if (tags && tags.length) {
+            const tg = h('div', { class: 'tags' });
+            tags.forEach((x) => tg.append(h('span', { class: 'tag' }, x)));
+            b.append(tg);
+          }
+          b.append(text ? h('p', {}, text) : h('p', { class: 'none' }, tags && tags.length ? '' : 'No notes'));
+          return b;
+        };
+        grid.append(
+          box('Logical Reasoning', '--s1', t.lrTags, t.lrNotes),
+          box('Reading Comprehension', '--s2', t.rcTags, t.rcNotes),
+        );
+        if (t.notes) grid.append(box('General', null, null, t.notes));
+        td.append(grid);
+        dtr.append(td);
+        tb.append(dtr);
+      }
     });
+
+    // keep expanded notes inside the visible width even when the table scrolls sideways
+    const wrapEl = $('.table-wrap');
+    wrapEl.style.setProperty('--wrap-w', Math.max(240, wrapEl.clientWidth - 12) + 'px');
+
+    renderTrouble(tests);
+  }
+
+  function renderTrouble(tests) {
+    const host = $('#trouble');
+    host.replaceChildren();
+    const tagged = tests.filter((t) => (t.lrTags && t.lrTags.length) || (t.rcTags && t.rcTags.length));
+    if (!tagged.length) {
+      $('#trouble-sub').textContent = 'Tag the question types that tripped you up when you log a test, and the ones that keep coming back will show up here.';
+      return;
+    }
+    $('#trouble-sub').textContent = `Question types you tagged most often, across ${tagged.length} test${tagged.length === 1 ? '' : 's'}`;
+    const wrap = h('div', { class: 'trouble' });
+    [['Logical Reasoning', '--s1', 'lrTags'], ['Reading Comprehension', '--s2', 'rcTags']].forEach(([title, color, key]) => {
+      const col = h('div');
+      const h3 = h('h3');
+      h3.append(h('i', { class: 'key-dot', style: `background:var(${color})` }), title);
+      col.append(h3);
+      const counts = new Map();
+      let n = 0;
+      tests.forEach((t) => {
+        if (!t[key] || !t[key].length) return;
+        n++;
+        t[key].forEach((tag) => counts.set(tag, (counts.get(tag) || 0) + 1));
+      });
+      const top = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8);
+      if (!top.length) {
+        col.append(h('p', { class: 'sub' }, 'No tags yet'));
+      } else {
+        const max = top[0][1];
+        top.forEach(([tag, c]) => {
+          const row = h('div', { class: 't-row', title: `${tag}: tagged on ${c} of ${n} tests` });
+          const track = h('div', { class: 'track' });
+          track.append(h('div', { class: 'fill', style: `width:${(100 * c) / max}%;background:var(${color})` }));
+          const cnt = h('div', { class: 'count' }, String(c));
+          cnt.append(h('span', {}, ` of ${n}`));
+          row.append(h('div', { class: 'name' }, tag), track, cnt);
+          col.append(row);
+        });
+      }
+      wrap.append(col);
+    });
+    host.append(wrap);
   }
 
   // ---------- add / edit dialog ----------
   const dlg = $('#dlg-test'), form = $('#form-test');
   let editingId = null;
+  function buildChips(sect, types, selected) {
+    const box = form.querySelector(`.chips[data-sect="${sect}"]`);
+    box.replaceChildren();
+    // keep any tag from an older/imported test that isn't in the current list
+    const all = types.concat(selected.filter((s) => !types.includes(s)));
+    all.forEach((name) => {
+      const b = h('button', { type: 'button', class: 'chip', 'aria-pressed': String(selected.includes(name)) }, name);
+      b.dataset.tag = name;
+      b.addEventListener('click', () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')));
+      box.append(b);
+    });
+  }
+  const readChips = (sect) => [...form.querySelectorAll(`.chips[data-sect="${sect}"] .chip[aria-pressed="true"]`)].map((b) => b.dataset.tag);
   function openTest(t) {
     editingId = t ? t.id : null;
     $('#dlg-title').textContent = t ? 'Edit practice test' : 'Add practice test';
@@ -821,7 +1004,12 @@ textarea { resize: vertical; min-height: 60px; }
     f.rcC.value = t && Number.isFinite(t.rcC) ? t.rcC : '';
     f.rcT.value = t && Number.isFinite(t.rcT) ? t.rcT : (latest && Number.isFinite(latest.rcT) ? latest.rcT : '');
     f.notes.value = t ? (t.notes || '') : '';
+    f.lrNotes.value = t ? (t.lrNotes || '') : '';
+    f.rcNotes.value = t ? (t.rcNotes || '') : '';
+    buildChips('lr', LR_TYPES, t ? cleanTags(t.lrTags) : []);
+    buildChips('rc', RC_TYPES, t ? cleanTags(t.rcTags) : []);
     dlg.showModal();
+    dlg.scrollTop = 0;
     (t ? f.score : f.name).focus();
   }
   form.addEventListener('submit', (e) => {
@@ -842,6 +1030,8 @@ textarea { resize: vertical; min-height: 60px; }
       date: f.date.value, name: f.name.value.trim(), score,
       br: br ?? undefined, lrC: lrC ?? undefined, lrT: lrT ?? undefined, rcC: rcC ?? undefined, rcT: rcT ?? undefined,
       notes: f.notes.value.trim(),
+      lrNotes: f.lrNotes.value.trim(), lrTags: readChips('lr'),
+      rcNotes: f.rcNotes.value.trim(), rcTags: readChips('rc'),
     };
     if (editingId) {
       const old = state.tests.find((x) => x.id === editingId);
@@ -885,8 +1075,8 @@ textarea { resize: vertical; min-height: 60px; }
   }
   function csv() {
     const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-    const rows = [['date', 'test', 'score', 'blind_review', 'lr_correct', 'lr_total', 'rc_correct', 'rc_total', 'notes']];
-    sortedTests().forEach((t) => rows.push([t.date, t.name, t.score, t.br, t.lrC, t.lrT, t.rcC, t.rcT, t.notes]));
+    const rows = [['date', 'test', 'score', 'blind_review', 'lr_correct', 'lr_total', 'lr_trouble_types', 'lr_notes', 'rc_correct', 'rc_total', 'rc_trouble_types', 'rc_notes', 'general_notes']];
+    sortedTests().forEach((t) => rows.push([t.date, t.name, t.score, t.br, t.lrC, t.lrT, cleanTags(t.lrTags).join('; '), t.lrNotes, t.rcC, t.rcT, cleanTags(t.rcTags).join('; '), t.rcNotes, t.notes]));
     return rows.map((r) => r.map(esc).join(',')).join('\n');
   }
   function sampleData() {
@@ -902,7 +1092,16 @@ textarea { resize: vertical; min-height: 60px; }
       const base = 0.45 + (score - 140) / 80;
       const lrC = Math.max(0, Math.min(51, Math.round(51 * (base + (rnd() - 0.5) * 0.08))));
       const rcC = Math.max(0, Math.min(27, Math.round(27 * (base - 0.03 + (rnd() - 0.5) * 0.12))));
-      out.push({ id: uid(), created: i, date: iso, name: `PrepTest ${128 + i}`, score, br: clampScore(score + 3 + Math.round(rnd() * 5)), lrC, lrT: 51, rcC, rcT: 27, notes: i === 6 ? 'Ran out of time on the last RC passage' : '' });
+      const pick = (list, k) => { const s = new Set(); while (s.size < k) s.add(list[Math.floor(rnd() * list.length)]); return [...s]; };
+      const lrTags = pick(['Flaw', 'Flaw', 'Necessary Assumption', 'Necessary Assumption', 'Sufficient Assumption', 'Parallel Flaw', 'Strengthen', 'Must Be True', 'Principle'], i < 8 ? 3 : 2);
+      const rcTags = pick(["Author's Attitude", "Author's Attitude", 'Inference', 'Inference', 'Function', 'Structure', 'Timing'], i < 8 ? 2 : 1);
+      out.push({
+        id: uid(), created: i, date: iso, name: `PrepTest ${128 + i}`, score, br: clampScore(score + 3 + Math.round(rnd() * 5)), lrC, lrT: 51, rcC, rcT: 27,
+        lrTags, rcTags,
+        lrNotes: i === 15 ? 'S1 Q14 flaw: confused sufficient vs. necessary.\nS2 Q20–22 rushed, guessed on 2.\nReview: conditional chains, parallel flaw drills.' : i % 3 === 0 ? `Missed ${51 - lrC}. ${lrTags[0]} questions still the main problem.` : '',
+        rcNotes: i === 15 ? 'P1 (law): 7 min, fine.\nP3 (science): 10 min, misread the author\'s attitude on Q17.\nComparative passage felt OK.' : i === 6 ? 'Ran out of time on the last passage' : '',
+        notes: i === 15 ? 'Took it at 9am, well rested. Felt strong on timing overall.' : '',
+      });
     }
     return out;
   }
@@ -932,7 +1131,7 @@ textarea { resize: vertical; min-height: 60px; }
     if (!file) return;
     try {
       const d = JSON.parse(await file.text());
-      const tests = (Array.isArray(d) ? d : d.tests || []).filter(validTest).map((t) => ({ ...t, id: t.id || uid() }));
+      const tests = (Array.isArray(d) ? d : d.tests || []).filter(validTest).map((t) => normalize({ ...t, id: t.id || uid() }));
       if (!tests.length) return alert('No valid tests found in that file.');
       if (state.tests.length && !confirm(`Replace your ${state.tests.length} current tests with ${tests.length} from the file?`)) return;
       state.tests = tests;
